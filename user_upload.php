@@ -8,14 +8,14 @@ $password = "abc";
 $db = "csv";
 
 $fileName = "users";
-$tableName="ww";
+$tableName="users";
 
 //Connect to DB
 $conn = mysqli_connect($servername, $username, $password, $db);
 if(!$conn){
 	die("Database connect error : ". mysqli_connect_errno() . PHP_EOL);
 }else{
-	echo "success to connect to MYSQL! \n";
+	echo "Success to connect to MYSQL! \n";
 }
 
 //
@@ -32,7 +32,7 @@ function doDryRun($handle){
 		$row++;	
 
 		for ($c=0; $c < $num; $c++) {
-			echo $data[$c]."       ";
+			echo trim($data[$c])."       ";
 		}
 		echo  "\n";
 	
@@ -77,7 +77,8 @@ function doCreateTable($handle){
 	$sql = "CREATE TABLE `".$tableName."` (
         `".$tableName."Id` int(100) unsigned NOT NULL AUTO_INCREMENT,
         ".$fields."
-        PRIMARY KEY (`".$tableName."Id`)
+        PRIMARY KEY (`".$tableName."Id`),
+		UNIQUE (`EMAIL`)
     ) ";
 	
 	$retval = mysqli_query($conn,$sql);
@@ -85,6 +86,45 @@ function doCreateTable($handle){
 	//insert data to table
 	if(! $retval ){
 		die('Could not create table: ' . mysql_error());
+	}else{
+		while(($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+			$num = count($data);
+			$fieldsInsertvalues="";
+			//get field values of each row
+			for ($c=0; $c < $num; $c++) {
+				
+				if($c !== 2){
+					//Capitalized the first letter 
+					$data[$c] = ucwords($data[$c]);
+					
+					$data[$c] = mysqli_real_escape_string($conn, $data[$c]);
+					$fieldsInsertvalues .=($c==0) ? '(' : ', ';
+					$fieldsInsertvalues .="'".trim($data[$c])."'";
+					
+				}else{
+					//Validate the email format
+					if (filter_var($data[$c], FILTER_VALIDATE_EMAIL)) {
+						//set email as lower case
+						$data[$c] = strtolower($data[$c]);
+						$fieldsInsertvalues .=($c==0) ? '(' : ', ';
+						$fieldsInsertvalues .="'".trim($data[$c])."'";
+					}else{
+						$output = "This (".trim($data[$c]).") email address is considered invalid.\n";
+						fwrite(STDOUT, $output);
+					}
+				}
+
+			}
+			$fieldsInsertvalues .= ')';
+			//insert the values to table
+			$sql = "INSERT INTO ".$tableName." ".$fieldsInsert."  VALUES  ".$fieldsInsertvalues;
+			mysqli_query($conn,$sql);   
+				
+			//close sql	
+			mysqli_close($conn);
+		}
+		
+		"Table is created!\n";
 	}
 }
 
