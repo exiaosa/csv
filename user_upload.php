@@ -164,11 +164,11 @@ function doCreateTable($handle){
 			$sql = "INSERT INTO ".$tableName." ".$fieldsInsert."  VALUES  ".$fieldsInsertvalues;
 			mysqli_query($conn,$sql);   
 				
-			//close sql	
-			mysqli_close($conn);
 		}
 		
 		"Table is created!\n";
+		//close sql	
+		mysqli_close($conn);
 	}
 }
 
