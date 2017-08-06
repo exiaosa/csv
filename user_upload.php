@@ -51,7 +51,7 @@ function getCommandLines($argv){
 			$result = substr($str, $start + 1, $length - 1);
 				
 			if(strpos($result, '.') !== false) {
-				echo 'This is invalid file. Please do not include any extension.';
+				die("[ERROR]: This is invalid file. Please do not include any extension.");
 				
 				
 			}else{
@@ -100,7 +100,7 @@ function getCommandLines($argv){
 	
 	if(in_array("--dry_run",$argv)){
 		if($fileName == ""){
-			echo "please set file name at the first.\n";
+			die("[ERROR]: please set file name as well.\n");
 		}else{
 			getFile('dry_run');
 		}
@@ -108,8 +108,12 @@ function getCommandLines($argv){
 	
 	if(in_array("--create_table",$argv)){
 		if($fileName === ""){
-			echo "please do dry_run at first!\n";
+			die("[ERROR]: please set file name as well.\n");
 		}else{
+			if(in_array("-p",$argv) || in_array("-u",$argv) || in_array("-d",$argv) || in_array("-h",$argv)){
+				die("[ERROR]: please set up database config.\n");
+			}
+			
 			connectDB();
 			getFile('create_table');
 		}
@@ -130,7 +134,7 @@ function connectDB(){
 	$conn = mysqli_connect($servername, $username, $password, $db);
 	
 	if(!$conn){
-		echo "Database connect error : ". mysqli_connect_errno() . PHP_EOL;
+		die("[ERROR]: Database connect error :". mysqli_connect_errno() . PHP_EOL);
 	}else{
 		echo "Success to connect to MYSQL! \n";
 	}
@@ -168,7 +172,8 @@ function doCreateTable($handle){
 	global $fileName;
 
 	global $conn;
-		
+	
+	
 	$fields = "";
 	$fieldsInsert = "";
 	
@@ -204,7 +209,7 @@ function doCreateTable($handle){
 	
 	//insert data to table
 	if(! $retval ){
-		die('Could not create table: ' . mysql_error());
+		die("[ERROR]: Could not create table: " . mysql_error());
 	}else{
 		while(($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
 			$num = count($data);
@@ -266,10 +271,10 @@ function getFile($action){
 			fclose($handle);
 			
 		}else{
-			echo "Fail to open the file!";
+			die("[ERROR]: Fail to open the file!");
 		}
 	}else{
-		echo "This is an empty file!";
+		die("[ERROR]: This is an empty file!");
 	}
 
 }
