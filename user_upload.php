@@ -1,23 +1,46 @@
 <?php
 error_reporting(E_ERROR);
 
+
 //DB config
+/**
 $servername = "localhost";
 $username = "root";
 $password = "abc";
 $db = "csv";
+**/
+
+$servername = "";
+$username = "";
+$password = "";
+$db = "";
 
 $fileName = "";
-$tableName="AAusers";
+$tableName="users";
 
 
-print_r($argv);
+/**
+ * Function is to initialize the script
+ * @param $argv -- arguments from the commend line
+*/
+function init($argv){
 
+	getCommandLines($argv);
+
+}
+
+/**
+ * Function is to deal with the argvs
+ * @param $argv -- arguments from the commend line
+*/
 function getCommandLines($argv){
+	global $servername;
+	global $username;
+	global $password;
+	global $db;
 	
 	foreach($argv as $i => $str){
 		if ($i == 0) continue;
-		
 		
 		if(substr( $str, 0, 6 ) === "--file"){
 			global $fileName;
@@ -26,43 +49,94 @@ function getCommandLines($argv){
 			$end = strpos($str, ']', $start + 1);
 			$length = $end - $start;
 			$result = substr($str, $start + 1, $length - 1);
-			
+				
 			if(strpos($result, '.') !== false) {
-				die('This is invalid file. Please do not include any extension.');
+				echo 'This is invalid file. Please do not include any extension.';
+				
+				
 			}else{
 				$fileName = $result;
-			}
-	
-		}else if(substr( $str, 0, 16 ) === "--create_table"){				
-			getFile('create_table');
 				
-		}else if(substr( $str, 0, 9 ) === "--dry_run"){
-			if($fileName === ""){
-				echo "please set file name at beginning in command line";
-			}else{
-				getFile('dry_run');
 			}
-			
-				
-		}else if(substr( $str, 0, 6 ) === "help"){
-			echo"--file [csv file name] - this is the name of the CSV to be parsed \n".
-				"--create_table - this will cause the MySQL users table to be built \n";
+		
 		}
-	   
+		
+		if(substr( $str, 0, 16 ) === "--create_table") continue;
+		
+		
+		if(substr( $str, 0, 9 ) === "--dry_run") continue;
+			
+		
+		if(substr( $str, 0, 6 ) === "--help"){
+			echo    "--file [csv file name] - this is the name of the CSV to be parsed \n".
+					"--create_table - this will cause the MySQL users table to be built \n".
+					"--dry_run - this will be used with the file directive in the instance that we want to run the script but not insert into the DB. All other functions will be executed, but the database won't be altered. \n".
+					"-u - MySQL username \n".
+					"-p - MySQL password \n".
+					"-h - MySQL host \n".
+					"-d - MySQL database name \n".
+					"--help - which will output the above list of directives with details \n";		
+		}
+		
+		if($str === "-h"){
+			$servername = $argv[$i+1];
+			
+		}
+		
+		if($str === "-d"){
+			$db = $argv[$i+1];
+			
+		}
+		
+		if($str === "-u"){
+			$username = $argv[$i+1];
+			
+		}
+		
+		if($str === "-p"){
+			$password = $argv[$i+1];
+		}
 	}
 	
+	if(in_array("--dry_run",$argv)){
+		if($fileName == ""){
+			echo "please set file name at the first.\n";
+		}else{
+			getFile('dry_run');
+		}
+	}
 	
+	if(in_array("--create_table",$argv)){
+		if($fileName === ""){
+			echo "please do dry_run at first!\n";
+		}else{
+			connectDB();
+			getFile('create_table');
+		}
+	}
 }
 
-//Connect to DB
-$conn = mysqli_connect($servername, $username, $password, $db);
-if(!$conn){
-	die("Database connect error : ". mysqli_connect_errno() . PHP_EOL);
-}else{
-	echo "Success to connect to MYSQL! \n";
+
+/**
+ * Function is to connect to the database
+*/
+function connectDB(){
+	global $servername;
+	global $username;
+	global $password;
+	global $db;
+	global $conn;
+	
+	$conn = mysqli_connect($servername, $username, $password, $db);
+	
+	if(!$conn){
+		echo "Database connect error : ". mysqli_connect_errno() . PHP_EOL;
+	}else{
+		echo "Success to connect to MYSQL! \n";
+	}
 }
 
-//
+
 /**
  * Function is to print out the csv data
  * @param $handle -- the opened csv file
@@ -92,8 +166,9 @@ function doDryRun($handle){
 function doCreateTable($handle){
 	global $tableName;
 	global $fileName;
+
 	global $conn;
-	
+		
 	$fields = "";
 	$fieldsInsert = "";
 	
@@ -199,7 +274,6 @@ function getFile($action){
 
 }
 
-getCommandLines($argv);
-
+init($argv);
 
 ?>
