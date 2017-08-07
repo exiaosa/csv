@@ -3,13 +3,6 @@ error_reporting(E_ERROR);
 
 
 //DB config
-/**
-$servername = "localhost";
-$username = "root";
-$password = "abc";
-$db = "csv";
-**/
-
 $servername = "";
 $username = "";
 $password = "";
@@ -24,7 +17,6 @@ $tableName="users";
  * @param $argv -- arguments from the commend line
 */
 function init($argv){
-
 	getCommandLines($argv);
 
 }
@@ -42,23 +34,27 @@ function getCommandLines($argv){
 	foreach($argv as $i => $str){
 		if ($i == 0) continue;
 		
+		//get file name from command --file [filename]
 		if(substr( $str, 0, 6 ) === "--file"){
 			global $fileName;
-
-			$start = strpos($str, '[');
-			$end = strpos($str, ']', $start + 1);
+			
+			$file = $argv[$i+1];
+			$start = strpos($file, '[');
+			$end = strpos($file, ']', $start + 1);
 			$length = $end - $start;
-			$result = substr($str, $start + 1, $length - 1);
+			$result = substr($file, $start + 1, $length - 1);
+			
+			try{
+				if(strpos($result, '.') !== false) {
+					throw new Exception('[ERROR]: This is invalid file. Please do not include any extension.');
 				
-			if(strpos($result, '.') !== false) {
-				die("[ERROR]: This is invalid file. Please do not include any extension.");
-				
-				
-			}else{
-				$fileName = $result;
-				
-			}
-		
+				}else{
+					$fileName = $result;
+					
+				}
+			}catch(Exception $e){
+				echo $e->getMessage();
+			}	
 		}
 		
 		if(substr( $str, 0, 16 ) === "--create_table") continue;
@@ -78,45 +74,60 @@ function getCommandLines($argv){
 					"--help - which will output the above list of directives with details \n";		
 		}
 		
+		//get host name from command -h
 		if($str === "-h"){
 			$servername = $argv[$i+1];
-			
 		}
 		
+		//get database name from command -d
 		if($str === "-d"){
 			$db = $argv[$i+1];
-			
 		}
 		
+		//get user name from command -u
 		if($str === "-u"){
 			$username = $argv[$i+1];
-			
 		}
 		
+		//get password from command -p
 		if($str === "-p"){
 			$password = $argv[$i+1];
 		}
 	}
 	
 	if(in_array("--dry_run",$argv)){
-		if($fileName == ""){
-			die("[ERROR]: please set file name as well.\n");
-		}else{
-			getFile('dry_run');
-		}
+		try{
+			if($fileName == ""){
+				throw new Exception('[ERROR]: please set file name as well.');
+			}else{
+				getFile('dry_run');
+			}
+		}catch(Exception $e){
+			echo $e->getMessage();
+		}	
+	
 	}
 	
 	if(in_array("--create_table",$argv)){
-		if($fileName === ""){
-			die("[ERROR]: please set file name as well.\n");
-		}else{
-			if(in_array("-p",$argv) || in_array("-u",$argv) || in_array("-d",$argv) || in_array("-h",$argv)){
-				die("[ERROR]: please set up database config.\n");
+		try{
+			if($fileName == ""){
+				throw new Exception('[ERROR]: please set file name as well.');
+			}else{
+				try{
+					if(!in_array("-p",$argv) || !in_array("-u",$argv) || !in_array("-d",$argv) || !in_array("-h",$argv)){
+						throw new Exception("[ERROR]: please set up database config, use --help to list options.");
+					
+					}else{
+						connectDB();
+						getFile('create_table');
+					}
+				}catch(Exception $e){
+					echo $e->getMessage();
+				}	
 			}
-			
-			connectDB();
-			getFile('create_table');
-		}
+		}catch(Exception $e){
+			echo $e->getMessage();
+		}	
 	}
 }
 
@@ -133,11 +144,16 @@ function connectDB(){
 	
 	$conn = mysqli_connect($servername, $username, $password, $db);
 	
-	if(!$conn){
-		die("[ERROR]: Database connect error :". mysqli_connect_errno() . PHP_EOL);
-	}else{
-		echo "Success to connect to MYSQL! \n";
+	try{
+		if(!$conn){
+			throw new Exception("[ERROR]: Database connect error :". mysqli_connect_errno() . PHP_EOL);
+		}else{
+			echo "Success to connect to MYSQL! \n";
+		}
+	}catch(Exception $e){
+		echo $e->getMessage();
 	}
+
 }
 
 
@@ -259,24 +275,42 @@ function doCreateTable($handle){
 function getFile($action){
 	global $fileName;
 	
-	if(filesize($fileName.".csv") > 0){	
-		if (($handle = fopen($fileName.".csv", "r")) !== FALSE) {	
-			
-			if($action === 'create_table'){
-				doCreateTable($handle);
-			}else if($action === 'dry_run'){
-				doDryRun($handle);
+	try{
+	
+		if(file_exists($fileName.".csv")){
+			try{
+				if(filesize($fileName.".csv") > 0){
+					try{
+						if(($handle = fopen($fileName.".csv", "r")) !== FALSE) {	
+						
+							if($action === 'create_table'){
+								doCreateTable($handle);
+							}else if($action === 'dry_run'){
+								doDryRun($handle);
+							}
+
+							fclose($handle);
+						
+						}else{
+							throw new Exception("[ERROR]: Fail to open the file!");
+						}
+					}catch(Exception $e){
+						echo $e->getMessage();
+					}
+				
+				}else{
+					throw new Exception("[ERROR]: This is an empty file!");
+				}
+			}catch(Exception $e){
+				echo $e->getMessage();
 			}
-
-			fclose($handle);
-			
+		
 		}else{
-			die("[ERROR]: Fail to open the file!");
+			throw new Exception("[ERROR]: The file ".$fileName."does not exist!");
 		}
-	}else{
-		die("[ERROR]: This is an empty file!");
+	}catch(Exception $e){
+		echo $e->getMessage();
 	}
-
 }
 
 init($argv);

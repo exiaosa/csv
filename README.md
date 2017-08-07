@@ -1,7 +1,8 @@
 "# csv" 
 
 **NOTES**:  
-I added the command option -d for MySQL database name which is necessary for connect to database.  
+(1)I added the command option -d for MySQL database name which is necessary for connect to database.  
+(2)All the command options are case sensitive, only valid for lower-case commands.
 
 **Command option guidance:**  
 **[Options]**  
@@ -15,9 +16,10 @@ I added the command option -d for MySQL database name which is necessary for con
 --help – which will output the above list of directives with details.  
 
 **[Usage]**  
-run the script: 
---file[csv file name] --dry_run  
+run the script:  
+--file [csv file name] --dry_run  
+PS: The csv file name does not include any extension, eg: --file [users]
 
 run the script with inserting data into database:  
---file[csv file name] --create_table -h hostname -u username -p password -d database
+--file [csv file name] --create_table -h hostname -u username -p password -d database
 
